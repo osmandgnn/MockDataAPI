@@ -1,0 +1,25 @@
+# Dockerfile optimized for Render.com deployment
+FROM mockserver/mockserver:5.15.0
+
+# Set working directory
+WORKDIR /app
+
+# Copy initialization config into the image
+COPY config/mockserver-initialization.json /app/mockserver-initialization.json
+
+# Set environment variables
+ENV MOCKSERVER_LOG_LEVEL=INFO \
+    MOCKSERVER_INITIALIZATION_JSON_PATH=/app/mockserver-initialization.json \
+    MOCKSERVER_ENABLE_CORS_FOR_API=true \
+    MOCKSERVER_ENABLE_CORS_FOR_ALL_RESPONSES=true \
+    MOCKSERVER_SERVER_PORT=1080
+
+# Expose port
+EXPOSE 1080
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:1080/mockserver/status || exit 1
+
+# Start MockServer
+CMD ["-serverPort", "1080", "-logLevel", "INFO"]

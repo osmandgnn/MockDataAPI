@@ -1,0 +1,40 @@
+[
+  {
+    "httpRequest": {
+      "method": "POST",
+      "path": "/nordex/services/nordex_opc",
+      "body": {
+        "type": "STRING",
+        "string": ".*GetStatus.*"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["text/xml; charset=utf-8"],
+        "SOAPAction": ["http://opcfoundation.org/webservices/XMLDA/1.0/GetStatus"]
+      },
+      "body": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <soap:Body>\n    <GetStatusResponse xmlns=\"http://opcfoundation.org/webservices/XMLDA/1.0/\">\n      <GetStatusResult>\n        <StatusInfo>Server is open for communication</StatusInfo>\n        <VendorInfo>Nordex Energy GmbH - MockServer (Render)</VendorInfo>\n        <ProductVersion>3.1.2-mock</ProductVersion>\n        <ServerState>running</ServerState>\n        <StartTime>2025-01-01T00:00:00Z</StartTime>\n      </GetStatusResult>\n    </GetStatusResponse>\n  </soap:Body>\n</soap:Envelope>",
+      "delay": {
+        "timeUnit": "MILLISECONDS",
+        "value": 100
+      }
+    },
+    "priority": 1
+  },
+  {
+    "httpRequest": {
+      "method": "POST",
+      "path": "/nordex/services/nordex_opc",
+      "body": {
+        "type": "REGEX",
+        "regex": ".*<Read.*"
+      }
+    },
+    "httpResponseTemplate": {
+      "templateType": "VELOCITY",
+      "template": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">\n  <soap:Body>\n    <ReadResponse xmlns=\"http://opcfoundation.org/webservices/XMLDA/1.0/\">\n      <ReadResult>\n        <ReplyItemList>\n          <Items>\n#foreach($i in [1..5])\n            <Items>\n              <ItemName>01WEA82943/analog/Param$i</ItemName>\n              <Value>$math.random(0,2000)</Value>\n              <Quality>\n                <QualityField>14</QualityField>\n                <LimitField>0</LimitField>\n                <VendorField>0</VendorField>\n              </Quality>\n              <Timestamp>$date.format('yyyy-MM-dd\\'T\\'HH:mm:ss\\'Z\\'')</Timestamp>\n              <TimestampSpecified>true</TimestampSpecified>\n            </Items>\n#end\n          </Items>\n        </ReplyItemList>\n      </ReadResult>\n    </ReadResponse>\n  </soap:Body>\n</soap:Envelope>"
+    },
+    "priority": 2
+  }
+]
