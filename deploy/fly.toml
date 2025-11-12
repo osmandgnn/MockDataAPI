@@ -1,0 +1,37 @@
+# Fly.io configuration file
+# Generated for energy-portal-mockserver
+
+app = "energy-portal-mockserver"
+primary_region = "fra"
+
+[build]
+  image = "mockserver/mockserver:5.15.0"
+
+[env]
+  MOCKSERVER_LOG_LEVEL = "INFO"
+  MOCKSERVER_INITIALIZATION_JSON_PATH = "/config/mockserver-initialization.json"
+  MOCKSERVER_ENABLE_CORS_FOR_API = "true"
+  MOCKSERVER_ENABLE_CORS_FOR_ALL_RESPONSES = "true"
+
+[http_service]
+  internal_port = 1080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
+
+[checks]
+  [checks.mockserver_health]
+    grace_period = "30s"
+    interval = "15s"
+    method = "get"
+    path = "/mockserver/status"
+    protocol = "http"
+    timeout = "10s"
+    type = "http"

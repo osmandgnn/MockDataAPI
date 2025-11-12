@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: energy-portal-mockserver
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: frankfurt  # En yakın region
+    envVars:
+      - key: MOCKSERVER_LOG_LEVEL
+        value: INFO
+      - key: MOCKSERVER_INITIALIZATION_JSON_PATH
+        value: /config/mockserver-initialization.json
+      - key: MOCKSERVER_ENABLE_CORS_FOR_API
+        value: "true"
+      - key: MOCKSERVER_ENABLE_CORS_FOR_ALL_RESPONSES
+        value: "true"
+    healthCheckPath: /mockserver/status
+    autoDeploy: true

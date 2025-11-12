@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mockserver:
+    container_name: energy-portal-mockserver
+    image: mockserver/mockserver:5.15.0
+    ports:
+      - "1080:1080"
+    environment:
+      # Enable verbose logging
+      MOCKSERVER_LOG_LEVEL: INFO
+      # Initialize with expectations on startup
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/mockserver-initialization.json
+      # Enable JavaScript templating
+      MOCKSERVER_ENABLE_CORS_FOR_API: "true"
+      MOCKSERVER_ENABLE_CORS_FOR_ALL_RESPONSES: "true"
+    volumes:
+      - ./config:/config
+      - ./js-templates:/js-templates
+    networks:
+      - energy-portal-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:1080/mockserver/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  energy-portal-network:
+    external: true

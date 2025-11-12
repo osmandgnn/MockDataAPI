@@ -1,0 +1,44 @@
+[
+  {
+    "id": "opc-getstatus",
+    "priority": 1,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/nordex/services/nordex_opc",
+      "body": {
+        "type": "STRING",
+        "string": ".*GetStatus.*",
+        "contentType": "text/xml"
+      }
+    },
+    "httpResponse": {
+      "statusCode": 200,
+      "headers": {
+        "Content-Type": ["text/xml; charset=utf-8"],
+        "SOAPAction": ["http://opcfoundation.org/webservices/XMLDA/1.0/GetStatus"]
+      },
+      "body": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\n  <soap:Body>\n    <GetStatusResponse xmlns=\"http://opcfoundation.org/webservices/XMLDA/1.0/\">\n      <GetStatusResult>\n        <StatusInfo>Server is open for communication</StatusInfo>\n        <VendorInfo>Nordex Energy GmbH - MockServer</VendorInfo>\n        <ProductVersion>3.1.2-mock</ProductVersion>\n        <ServerState>running</ServerState>\n        <StartTime>2025-01-01T00:00:00Z</StartTime>\n        <CurrentTime>${ new Date().toISOString() }</CurrentTime>\n      </GetStatusResult>\n    </GetStatusResponse>\n  </soap:Body>\n</soap:Envelope>",
+      "delay": {
+        "timeUnit": "MILLISECONDS",
+        "value": 100
+      }
+    }
+  },
+  {
+    "id": "opc-read-dynamic",
+    "priority": 2,
+    "httpRequest": {
+      "method": "POST",
+      "path": "/nordex/services/nordex_opc",
+      "body": {
+        "type": "REGEX",
+        "regex": ".*<Read.*xmlns=\"http://opcfoundation.org/webservices/XMLDA/1.0/\".*",
+        "contentType": "text/xml"
+      }
+    },
+    "httpResponseTemplate": {
+      "templateType": "JAVASCRIPT",
+      "template": "function generateResponse() {\n  const requestBody = request.body.string;\n  const itemNameRegex = /<ItemName>([^<]+)<\\/ItemName>/g;\n  const itemNames = [];\n  let match;\n  \n  while ((match = itemNameRegex.exec(requestBody)) !== null) {\n    itemNames.push(match[1]);\n  }\n  \n  function randomValue(min, max, decimals) {\n    const value = min + Math.random() * (max - min);\n    return decimals !== undefined ? value.toFixed(decimals) : Math.floor(value);\n  }\n  \n  function getTurError() {\n    const rand = Math.random();\n    if (rand < 0.85) return 'FM0';\n    if (rand < 0.90) return 'FM103';\n    if (rand < 0.95) return 'FM6';\n    if (rand < 0.98) return 'FM105';\n    return 'FM201';\n  }\n  \n  function getParameterValue(paramName) {\n    const windSpeed = randomValue(0, 25, 1);\n    let power = 0;\n    if (windSpeed >= 3 && windSpeed < 12) {\n      power = randomValue(0, 2000, 1);\n    } else if (windSpeed >= 12 && windSpeed < 25) {\n      power = randomValue(1900, 2000, 1);\n    }\n    \n    const paramValues = {\n      'PwrAct': power,\n      'WSpd': windSpeed,\n      'WDir': randomValue(0, 360, 0),\n      'NacDir': randomValue(0, 360, 0),\n      'RotSpd': windSpeed > 3 ? randomValue(8, 20, 1) : '0.0',\n      'GnSpd': windSpeed > 3 ? randomValue(1200, 1800, 0) : 0,\n      'TurError': getTurError(),\n      'GriVolt1': randomValue(655, 725, 1),\n      'GriVolt2': randomValue(655, 725, 1),\n      'GriVolt3': randomValue(655, 725, 1),\n      'GriCurL1': power > 0 ? randomValue(1400, 1600, 1) : '0.0',\n      'GriCurL2': power > 0 ? randomValue(1400, 1600, 1) : '0.0',\n      'GriCurL3': power > 0 ? randomValue(1400, 1600, 1) : '0.0',\n      'GnBrgBS': randomValue(35, 60, 1),\n      'GnBrgAS': randomValue(35, 60, 1),\n      'GnTmpL1': randomValue(45, 75, 1),\n      'GnTmpL2': randomValue(45, 75, 1),\n      'GnTmpInlet': randomValue(10, 25, 1),\n      'GnTmpOutlet': randomValue(35, 55, 1),\n      'AirPres': randomValue(1000, 1030, 2),\n      'ExtTmp': randomValue(-10, 35, 1),\n      'COUNT20': randomValue(10000000, 99999999, 0),\n      'COUNT21': randomValue(10000000, 99999999, 0)\n    };\n    \n    return paramValues[paramName] || randomValue(0, 100, 1);\n  }\n  \n  const timestamp = new Date().toISOString();\n  let itemsXml = '';\n  \n  itemNames.forEach(function(itemName) {\n    const parts = itemName.split('/');\n    const paramName = parts.length > 2 ? parts[2] : 'Unknown';\n    const value = getParameterValue(paramName);\n    \n    itemsXml += '            <Items>\\n';\n    itemsXml += '              <ItemName>' + itemName + '</ItemName>\\n';\n    itemsXml += '              <Value>' + value + '</Value>\\n';\n    itemsXml += '              <Quality>\\n';\n    itemsXml += '                <QualityField>14</QualityField>\\n';\n    itemsXml += '                <LimitField>0</LimitField>\\n';\n    itemsXml += '                <VendorField>0</VendorField>\\n';\n    itemsXml += '              </Quality>\\n';\n    itemsXml += '              <Timestamp>' + timestamp + '</Timestamp>\\n';\n    itemsXml += '              <TimestampSpecified>true</TimestampSpecified>\\n';\n    itemsXml += '              <ResultID>\\n';\n    itemsXml += '                <Name>Success</Name>\\n';\n    itemsXml += '                <Namespace>http://opcfoundation.org/</Namespace>\\n';\n    itemsXml += '                <IsEmpty>false</IsEmpty>\\n';\n    itemsXml += '              </ResultID>\\n';\n    itemsXml += '            </Items>\\n';\n  });\n  \n  return {\n    'statusCode': 200,\n    'headers': {\n      'Content-Type': ['text/xml; charset=utf-8'],\n      'SOAPAction': ['http://opcfoundation.org/webservices/XMLDA/1.0/Read']\n    },\n    'body': '<?xml version=\"1.0\" encoding=\"utf-8\"?>\\n' +\n            '<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\">\\n' +\n            '  <soap:Body>\\n' +\n            '    <ReadResponse xmlns=\"http://opcfoundation.org/webservices/XMLDA/1.0/\">\\n' +\n            '      <ReadResult>\\n' +\n            '        <ReplyItemList>\\n' +\n            '          <Items>\\n' +\n            itemsXml +\n            '          </Items>\\n' +\n            '        </ReplyItemList>\\n' +\n            '      </ReadResult>\\n' +\n            '    </ReadResponse>\\n' +\n            '  </soap:Body>\\n' +\n            '</soap:Envelope>',\n    'delay': {\n      'timeUnit': 'MILLISECONDS',\n      'value': Math.floor(Math.random() * 500) + 200\n    }\n  };\n}\n\nreturn generateResponse();"
+    }
+  }
+]
