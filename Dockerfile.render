@@ -5,7 +5,7 @@ FROM mockserver/mockserver:5.15.0
 WORKDIR /app
 
 # Copy initialization config into the image
-COPY config/mockserver-initialization.json /app/mockserver-initialization.json
+COPY config/mockserver-initialization-render.json /app/mockserver-initialization.json
 
 # Set environment variables
 ENV MOCKSERVER_LOG_LEVEL=INFO \
